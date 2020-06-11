@@ -1,0 +1,7 @@
+# Main executable
+submission
+
+# Build files
+key
+log
+*.o
