@@ -6,10 +6,10 @@ LINK=script -q -c "$(CC) -lssl -lcrypto -L ./qrgen -lqrcodegen -o $@ $^" $(CLOG)
 
 all: log submission
 
-submission: submission.c qr.o
+submission: submission.c qr.o qrgen/qrcodegen.o
 	$(LINK)
 
-qr.o: qr.c qr.h qrgen/qrcodegen.o
+qr.o: qr.c qr.h
 	$(COMP)
 
 qrgen/qrcodegen.o:
