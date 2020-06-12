@@ -1,4 +1,50 @@
-TOTP Client
+TOTP Demo Application for Google Authenticator
 
-Author: Zach Colbert <colbertz@oregonstate.edu>
+NAME
+    submission
 
+AUTHOR
+    Zach Colbert <colbertz@oregonstate.edu>
+
+SYNOPSIS
+    ./submission --generate-qr | --get-otp
+
+DESCRIPTION
+    To compile, run `make`.
+
+    The QR code generation feature generates a random 256-bit key with OpenSSL.
+    It then encodes the key base-32, and collects some information about the
+    current user and host to generate an otpauth URI. Using the qrcodegen
+    library (by @nayuki), the URI is converted to a QR code and printed to the
+    console. (See NOTES).
+
+    This application only supports one user/key at a time. Each time the
+    QR code generator is executed, the previously generated symmetric key
+    is overwritten. This key is stored in the "secret" file by default,
+    in plaintext, with restricted access permissions.
+
+    The get-otp feature has not yet been implemented.
+
+    To clean up executables and build files, run `make clean`.
+
+NOTES
+    I was unable to find a method in C for generating JPG or SVG images in a
+    timely fashion. Instead, I took after an example from the qrcodegen library
+    (by @nayuki on GitHub) and print the QR code to the console. Because the
+    code is made up of literal '#' chars and there's a fair amount of data
+    stored in the code (plus error correction), the QR code comes out fairly
+    large. If you find yourself unable to see the entire code, please resize
+    your terminal window.
+
+    All of the code contained here was tested on the COE flip server, so I
+    recommend compiling and running it there.
+
+    I do not have access to an Android device, so this application was tested
+    using the iOS version of Google Authenticator.
+    
+    For the entire day I've been finishing this submission, I have been fighting
+    a >100-degree fever. Please forgive me if you find any funky code or
+    something doesn't make sense.
+
+COPYRIGHT
+    See LICENSE file.
