@@ -5,3 +5,10 @@ submission
 secret
 log
 *.o
+
+# QRCodeGen build files
+qrgen/.deps
+qrgen/libqrcodegen.a
+qrgen/qrcodegen-demo
+qrgen/qrcodegen-test
+qrgen/qrcodegen-worker
