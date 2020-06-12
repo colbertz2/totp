@@ -6,7 +6,7 @@ LINK=script -q -c "$(CC) -lssl -lcrypto -L ./qrgen -lqrcodegen -o $@ $^" $(CLOG)
 
 all: log submission
 
-submission: submission.c qr.o qrgen/qrcodegen.o
+submission: submission.c otp.o qr.o qrgen/qrcodegen.o
 	$(LINK)
 
 qr.o: qr.c qr.h
@@ -15,9 +15,15 @@ qr.o: qr.c qr.h
 qrgen/qrcodegen.o:
 	$(MAKE) -C qrgen all
 
-tests: test_qr
+otp.o: otp.c otp.h
+	$(COMP)
+
+tests: test_qr test_otp
 
 test_qr: test_qr.c qr.o qrgen/qrcodegen.o
+	$(LINK)
+
+test_otp: test_otp.c otp.o
 	$(LINK)
 
 log:
@@ -26,5 +32,5 @@ log:
 clean:
 	rm -rf *.dSYM 
 	rm -f log/*
-	rm -f submission *.o test_qr
+	rm -f submission *.o test_qr test_otp
 	$(MAKE) -C qrgen/ clean

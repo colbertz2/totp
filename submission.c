@@ -14,6 +14,7 @@
 #include <getopt.h>
 
 #include "qr.h"
+#include "otp.h"
 
 void _usage(const char* exe) {
     printf("Usage: %s --generate-qr | --get-otp\n", exe);
@@ -38,12 +39,10 @@ int main(int argc, char *argv[]) {
     opt = getopt_long(argc, argv, "01", long_options, NULL);
     switch (opt) {
         case 0:
-            // Call QR code function
             qr_generate();
             break;
         case 1:
-            // @DEV Call get-otp function
-            printf("Get OTP!\n");
+            get_otp();
             break;
         default: _usage(argv[0]);
     }

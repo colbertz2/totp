@@ -23,7 +23,9 @@ DESCRIPTION
     is overwritten. This key is stored in the "secret" file by default,
     in plaintext, with restricted access permissions.
 
-    The get-otp feature has not yet been implemented.
+    The get-otp feature has only been partially implemented. It successfully
+    reads the key from the key file, but a segmentation fault occurs when
+    trying to calculate the time value T.
 
     To clean up executables and build files, run `make clean`.
 
