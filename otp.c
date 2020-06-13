@@ -21,7 +21,7 @@
 #define KEY_LENGTH 32
 
 int get_otp() {
-    unsigned char* K, T;
+    unsigned char *K, *T;
     unsigned int digest_len;
     unsigned char digest[EVP_MAX_MD_SIZE];
 
@@ -32,8 +32,8 @@ int get_otp() {
     T = _otp_get_time();
 
     // Can't get HMAC working before submission deadline
-    fprintf(stderr, "DEBUG: K %s\n", K);
-    fprintf(stderr, "DEBUG: T %s\n", T);
+    fprintf(stderr, "DEBUG: K=%s\n", K);
+    fprintf(stderr, "DEBUG: T=%s\n", T);
 
     /***
     // Run HMAC
@@ -51,11 +51,11 @@ int get_otp() {
     return 0;
 }
 
-char* _otp_read_key() {
+unsigned char* _otp_read_key() {
     int fd;
     int buf_size = (KEY_LENGTH + 1) * sizeof(char);
-    char* buffer = calloc(KEY_LENGTH + 1, sizeof(char));
-    char* key = calloc(KEY_LENGTH + 1, sizeof(char));
+    unsigned char* buffer = calloc(KEY_LENGTH + 1, sizeof(char));
+    unsigned char* key = calloc(KEY_LENGTH + 1, sizeof(char));
 
     memset(buffer, '\0', buf_size);
     memset(key, '\0', buf_size);
@@ -77,16 +77,17 @@ char* _otp_read_key() {
     return key;
 }
 
-char* _otp_get_time() {
+unsigned char* _otp_get_time() {
     time_t T, tsec = time(NULL);
-    char* result = calloc(17, sizeof(char));
-    memset(result, '\0', 17 * sizeof(char));
+    unsigned char* result = calloc(20, sizeof(char));
+    memset(result, '\0', 20 * sizeof(char));
 
     // T = (time - T0) / X
     // X = 30 sec
     T = tsec / 30;
 
     // Convert to hex string
-    sprintf(result, "%016lx\n", (long int) T);
+    sprintf(result, "%016lx", (long int) T);
+    // fprintf(stderr, "%016lx\n", (long int) T);      // @DEV
     return result;
 }

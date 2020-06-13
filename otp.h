@@ -2,5 +2,5 @@
 
 int get_otp();
 
-char* _otp_read_key();
-char* _otp_get_time();
+unsigned char* _otp_read_key();
+unsigned char* _otp_get_time();
