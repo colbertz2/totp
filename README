@@ -23,9 +23,13 @@ DESCRIPTION
     is overwritten. This key is stored in the "secret" file by default,
     in plaintext, with restricted access permissions.
 
-    The get-otp feature has only been partially implemented. It successfully
-    reads the key from the key file, but a segmentation fault occurs when
-    trying to calculate the time value T.
+    The get-otp feature has only been partially implemented. It can
+    successfully read the key from the key file, calculate the time value T,
+    and truncate the result of HMAC(K, T) to calculate a TOTP value.
+    However, the HMAC implementation I'm using seems to be returning the same
+    digest for every message (T) I input with the same key (K). I have been
+    unable to determine why this is, and have not found many good examples
+    on how to use the openssl/hmac library.
 
     To clean up executables and build files, run `make clean`.
 
