@@ -58,11 +58,14 @@ int qr_generate() {
   gdImagePtr qrImg;
 
   // Generate key and write to file
-  /************************************************
-   * NOTE: This app overwrites the key file each
-   * time a new one is generated. We only support
-   * one user at a time.
-   ************************************************/
+  /*****************************************************************************
+   * NOTE: Unless KEY_REUSE is set to 0, this program overwrites the secret key
+   * file at runtime. Only one user at a time is supported.
+   *
+   * When KEY_REUSE is set to 0, the program attempts to reuse an existing
+   * secret key. This is a VERY UNSECURE PRACTICE and should be used in
+   * development only.
+   ****************************************************************************/
   if ((access(keyfname, F_OK) == -1) || (KEY_REUSE != 0)) {
     // Generate new key
     key = _qr_keygen();
