@@ -1,8 +1,8 @@
 CC=gcc -Wall -g
 CLOG=log
 
-COMP=script -q -c "$(CC) -c -lssl -lcrypto -lgd -lqrencode -L ./qrgen -lqrcodegen -o $@ $<" $(CLOG)/$(@F)
-LINK=script -q -c "$(CC) -lssl -lcrypto -lgd -lqrencode -L ./qrgen -lqrcodegen -o $@ $^" $(CLOG)/$(@F)
+COMP=script -q -c "$(CC) -c -lssl -lcrypto -lgd -lqrencode -o $@ $<" $(CLOG)/$(@F)
+LINK=script -q -c "$(CC) -lssl -lcrypto -lgd -lqrencode -o $@ $^" $(CLOG)/$(@F)
 
 all: log submission
 
