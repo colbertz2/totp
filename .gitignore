@@ -4,6 +4,7 @@ test_qr
 
 # Build files
 secret
+scanme.jpg
 log
 *.o
 
