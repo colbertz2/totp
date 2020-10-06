@@ -86,8 +86,9 @@ int qr_generate() {
       return 1;
     }
 
-    key = calloc(KEY_LENGTH, sizeof(char));
-    if (fgets(key, KEY_LENGTH, keyfile) == NULL) {
+    key = calloc(KEY_LENGTH + 1, sizeof(char));
+    memset(key, '\0', sizeof(char) * (KEY_LENGTH + 1));
+    if (fgets(key, KEY_LENGTH + 1, keyfile) == NULL) {
       fprintf(stderr, "Unable to read secret key from file: %s\n", keyfname);
       fclose(keyfile);
       return 1;
@@ -95,7 +96,7 @@ int qr_generate() {
 
     fclose(keyfile);
   }
-  fprintf(stderr, "DEBUG: secret %s\n", key);  // @DEV
+  // fprintf(stderr, "DEBUG: secret %s\n", key);  // @DEV
 
   // Get user id
   pw = getpwuid(getuid());
