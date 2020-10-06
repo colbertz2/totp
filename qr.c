@@ -26,6 +26,8 @@
 
 #define KEY_LENGTH 32
 
+#define KEY_REUSE 0  // 0 --> reuse key FOR DEVELOPMENT ONLY
+
 // "Private" methods
 char *_qr_keygen();
 gdImagePtr _qr_img(QRcode *, int[3], int[3], int, int);
@@ -36,7 +38,8 @@ int qr_generate() {
   char *key, *uname, *keyfname = "secret";
   char *hostname = calloc(101, sizeof(char));
   char *uri = calloc(275, sizeof(char));
-  int status, keyfd;
+  int status;
+  FILE *keyfile;
   struct passwd *pw;
 
   int QRversion = 0;                 // Allow library to choose code size
@@ -60,13 +63,36 @@ int qr_generate() {
    * time a new one is generated. We only support
    * one user at a time.
    ************************************************/
-  key = _qr_keygen();
-  do {
-    keyfd = open(keyfname, O_CREAT | O_WRONLY | O_TRUNC, 0600);
-  } while (keyfd == -1);
-  write(keyfd, key, strlen(key) * sizeof(char));
-  close(keyfd);
-  // fprintf(stderr, "DEBUG: secret %s\n", key); // @DEV
+  if ((access(keyfname, F_OK) == -1) || (KEY_REUSE != 0)) {
+    // Generate new key
+    key = _qr_keygen();
+
+    // Write key to file
+    keyfile = fopen(keyfname, "w");
+    if (keyfile == NULL) {
+      fprintf(stderr, "Unable to open secret key file: %s\n", keyfname);
+      return 1;
+    }
+    fputs(key, keyfile);
+    fclose(keyfile);
+  } else {
+    // Reuse existing key
+    keyfile = fopen(keyfname, "r");
+    if (keyfile == NULL) {
+      fprintf(stderr, "Unable to open secret key file: %s\n", keyfname);
+      return 1;
+    }
+
+    key = calloc(KEY_LENGTH, sizeof(char));
+    if (fgets(key, KEY_LENGTH, keyfile) == NULL) {
+      fprintf(stderr, "Unable to read secret key from file: %s\n", keyfname);
+      fclose(keyfile);
+      return 1;
+    }
+
+    fclose(keyfile);
+  }
+  fprintf(stderr, "DEBUG: secret %s\n", key);  // @DEV
 
   // Get user id
   pw = getpwuid(getuid());
