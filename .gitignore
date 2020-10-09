@@ -1,6 +1,7 @@
 # Executables
 submission
 test_qr
+test_otp
 
 # Build files
 secret
