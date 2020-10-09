@@ -1,0 +1,6 @@
+GitHub:           https://github.com/colbertz2/totp
+TOTP Standard:    https://tools.ietf.org/pdf/rfc6238.pdf
+HOTP Standard:    https://tools.ietf.org/pdf/rfc4226.pdf
+GA URI Doc:       https://github.com/google/google-authenticator/wiki/Key-Uri-Format
+Base32 Encoding:  https://tools.ietf.org/html/rfc3548#page-6
+OpenSSL HMAC:     https://www.openssl.org/docs/man1.1.0/man3/HMAC.html
