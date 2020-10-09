@@ -1,70 +1,85 @@
-// Tests for otp.c
+// Test app for otp.h
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <openssl/hmac.h>
-#include <openssl/evp.h>
 
 #include "otp.h"
+const unsigned char k[] = "12345678901234567890";
+const int COL_WIDTH = 11;
+const char HEAD_FMT[] = "| %*s | %*s | %*s | %*s |\n";
+const char ROW_FMT[] = "| %*lu | %*d | %*d | %*s |\n";
+const int T4_WIDTH = (4 * COL_WIDTH) + (4 * 2) + 5;
+
+void t4_header(const char *, const char *, const char *, const char *);
+void t4_row(long, int, int, const char *);
+void t4_line();
 
 int main() {
-    int i;
-    unsigned long totp;
-    unsigned char *digest;
-    unsigned char trunc[9];
-    memset(trunc, '\0', 9 * sizeof(char));
+  const int n_times = 6;
+  const int n_counts = 10;
+  const int test_counts[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+  const long test_times[] = {59,         1111111109, 1111111111,
+                             1234567890, 2000000000, 20000000000};
+  const int test_hotps[] = {755224, 287082, 359152, 969429, 338314,
+                            254676, 287922, 162583, 399871, 520489};
+  const int test_totps[] = {94287082, 7081804,  14050471,
+                            89005924, 69279037, 65353130};
+  unsigned char *test_key = (unsigned char *)"12345678901234567890";
 
-    // unsigned char* K = _otp_read_key();
-    unsigned char* K = _otp_read_key();
-    printf("K = %s\n", K);
+  int i, val;
+  char *pass_str;
 
-    // unsigned char* T = _otp_get_time();
-    unsigned char* T = _otp_get_time();
-    printf("T = %s\n", T);
+  // HOTP TEST VECTORS
+  printf("=== HOTP TESTS ===\n");
+  t4_header("Count", "Test Val", "Result", "P/F");
+  for (i = 0; i < n_counts; i++) {
+    val = hotp6(test_key, test_counts[i]);
 
-    digest = HMAC(EVP_sha1(),
-                K, sizeof(K) - 1,
-                T, sizeof(T) - 1,
-                NULL, NULL);
-
-    printf("HMAC(K, T) = ");
-    for (i = 0; i < strlen(digest); i++) {
-        printf("%x ", (int) digest[i]);
+    if (val == test_hotps[i]) {
+      pass_str = "PASS";
+    } else {
+      pass_str = "FAIL";
     }
-    printf("\n");
 
-    // Truncate HMAC result
-    i = digest[19] & 0xf;
+    t4_row(test_counts[i], test_hotps[i], val, pass_str);
+  }
+  t4_line();
 
-    sprintf(trunc, "%x%x%x%x",
-            (int)(digest[i]   & 0x7f),
-            (int)(digest[i+1] & 0xff),
-            (int)(digest[i+2] & 0xff),
-            (int)(digest[i+3] & 0xff));
-    printf("TRUNC = %s\n", trunc);
+  // TOTP TEST VECTORS
+  printf("=== TOTP TESTS ===\n");
+  t4_header("Time", "Test Val", "Result", "P/F");
+  for (i = 0; i < n_times; i++) {
+    val = totp8(test_key, test_times[i]);
 
-    // memset(trunc, digest[i] & 0x7f, 1);
-    // memset(trunc + 1, digest[i+1] & 0xff, 1);
-    // memset(trunc + 2, digest[i+2] & 0xff, 1);
-    // memset(trunc + 3, digest[i+3] & 0xff, 1);
-    // printf("TRUNC = ");
-    // for (i = 0; i < strlen(trunc); i++) {
-    //     printf("%x ", (int) trunc[i]);
-    // }
-    // printf("\n");
+    if (val == test_totps[i]) {
+      pass_str = "PASS";
+    } else {
+      pass_str = "FAIL";
+    }
 
-    // Cast to unsigned int and take mod 10^6
-    // totp = (unsigned int) trunc % 1000000;
-    totp = strtoul(trunc, NULL, 16);
-    printf("TRUNC (ulong) = %lu\n", totp);
+    t4_row(test_times[i], test_totps[i], val, pass_str);
+  }
+  t4_line();
 
-    totp = totp % 1000000;
-    printf("TOTP = %lu\n", totp);
+  return 0;
+}
 
-    free(K);
-    free(T);
-    // free(digest);
-    return 0;
+void t4_header(const char *a, const char *b, const char *c, const char *d) {
+  t4_line();
+  printf(HEAD_FMT, COL_WIDTH, a, COL_WIDTH, b, COL_WIDTH, c, COL_WIDTH, d);
+  t4_line();
+}
+
+void t4_row(long a, int b, int c, const char *d) {
+  printf(ROW_FMT, COL_WIDTH, a, COL_WIDTH, b, COL_WIDTH, c, COL_WIDTH, d);
+}
+
+void t4_line() {
+  int i;
+
+  for (i = 0; i < T4_WIDTH; i++) {
+    printf("-");
+  }
+  printf("\n");
 }

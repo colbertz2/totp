@@ -1,114 +1,142 @@
 /**********************************************************
  * otp.c - Calculates TOTP of key stored in "secret" file
- * 
+ *
  * AUTHOR
  *      Zach Colbert <colbertz@oregonstate.edu>
  **********************************************************/
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
-#include <time.h>
-#include <openssl/hmac.h>
-
 #include "otp.h"
 
-#define KEY_LENGTH 32
+#include <endian.h>
+#include <openssl/evp.h>
+#include <openssl/hmac.h>
+#include <string.h>
 
-int get_otp() {
-    int i;
-    unsigned long totp;
-    unsigned char *digest;
-    unsigned char trunc[9];
-    memset(trunc, '\0', 9 * sizeof(char));
+#define TOTP_TIME_STEP 30;  // Defined in TOTP standard
 
-    // unsigned char* K = _otp_read_key();
-    unsigned char* K = _otp_read_key();
-    printf("K = %s\n", K);
+unsigned char* hotp_hmac_sha1(const unsigned char* k, int k_len, uint64_t c);
+int hotp_trunc6(const unsigned char* d, int d_len);
+int hotp_trunc8(const unsigned char* d, int d_len);
 
-    // unsigned char* T = _otp_get_time();
-    unsigned char* T = _otp_get_time();
-    printf("T = %s\n", T);
+// Alias for totp6()
+// Returns the 6-digit TOTP at Unix time t using shared secret k.
+//
+// NOTE: k should be ASCII encoded, not base32 as in the OTP URI.
+int totp(const unsigned char* k, uint64_t t) { return totp6(k, t); }
 
-    // HMAC seems to be returning the same digest
-    // for different messages (T) with the same key
-    digest = HMAC(EVP_sha1(),
-                K, sizeof(K) - 1,
-                T, sizeof(T) - 1,
-                NULL, NULL);
-
-    printf("HMAC(K, T) = ");
-    for (i = 0; i < strlen(digest); i++) {
-        printf("%x ", (int) digest[i]);
-    }
-    printf("\n");
-
-    // Truncate HMAC result
-    i = digest[19] & 0xf;
-
-    // Copy byte values (hex) into a string literal
-    sprintf(trunc, "%x%x%x%x",
-            (int)(digest[i]   & 0x7f),
-            (int)(digest[i+1] & 0xff),
-            (int)(digest[i+2] & 0xff),
-            (int)(digest[i+3] & 0xff));
-    printf("TRUNC = %s\n", trunc);
-
-    // Cast to unsigned long and take mod 10^6
-    totp = strtoul(trunc, NULL, 16);
-    printf("TRUNC (ulong) = %lu\n", totp);
-
-    totp = totp % 1000000;
-    printf("TOTP = %lu\n", totp);
-
-    free(K);
-    free(T);
-    // free(digest);
-    return 0;
+// Returns the 6-digit TOTP at Unix time t using shared secret k.
+//
+// NOTE: k should be ASCII encoded, not base32 as in the OTP URI.
+int totp6(const unsigned char* k, uint64_t t) {
+  uint64_t timeCounter = t / TOTP_TIME_STEP;
+  return hotp(k, timeCounter);
 }
 
-unsigned char* _otp_read_key() {
-    int fd;
-    int buf_size = (KEY_LENGTH + 1) * sizeof(char);
-    unsigned char* buffer = calloc(KEY_LENGTH + 1, sizeof(char));
-    unsigned char* key = calloc(KEY_LENGTH + 1, sizeof(char));
-
-    memset(buffer, '\0', buf_size);
-    memset(key, '\0', buf_size);
-
-    // Open key file
-    fd = open("secret", O_RDONLY);
-    if (fd == -1) {
-        fprintf(stderr, "%s\n", strerror(errno));
-        exit(2);
-    }
-
-    // Read key from key file into "key" string
-    while (read(fd, buffer, buf_size - 1) > 0) {
-        strcat(key, buffer);
-        memset(buffer, '\0', buf_size);
-    }
-
-    free(buffer);
-    return key;
+// Returns the 8-digit TOTP at Unix time t using shared secret k.
+//
+// NOTE: k should be ASCII encoded, not base32 as in the OTP URI.
+int totp8(const unsigned char* k, uint64_t t) {
+  uint64_t timeCounter = t / TOTP_TIME_STEP;
+  return hotp8(k, timeCounter);
 }
 
-unsigned char* _otp_get_time() {
-    time_t T, tsec = time(NULL);
-    unsigned char* result = calloc(20, sizeof(char));
-    memset(result, '\0', 20 * sizeof(char));
+// Alias for hotp6()
+// Returns the 6-digit HOTP for counter c using shared secret k.
+//
+// NOTE: k should be ASCII encoded, not base32 as in the OTP URI.
+//       k MUST BE null-terminated.
+int hotp(const unsigned char* k, uint64_t c) { return hotp6(k, c); }
 
-    // T = (time - T0) / X
-    // X = 30 sec
-    T = tsec / 30;
+// Returns the 6-digit HOTP for counter c using shared secret k.
+//
+// NOTE: k should be ASCII encoded, not base32 as in the OTP URI.
+//       k MUST BE null-terminated.
+int hotp6(const unsigned char* k, uint64_t c) {
+  unsigned char* hmac;
+  int k_len, hotp;
 
-    // Convert to hex string
-    sprintf(result, "%016lx", (long int) T);
-    // fprintf(stderr, "%016lx\n", (long int) T);      // @DEV
-    return result;
+  k_len = strlen((char*)k);
+
+  hmac = hotp_hmac_sha1(k, k_len, c);
+  hotp =
+      hotp_trunc6(hmac, 20);  // 20 is the standard length of HMAC-SHA-1 output
+
+  return hotp;
 }
+
+// Returns the 8-digit HOTP for counter c using shared secret k.
+//
+// NOTE: k should be ASCII encoded, not base32 as in the OTP URI.
+//       k MUST BE null-terminated.
+int hotp8(const unsigned char* k, uint64_t c) {
+  unsigned char* hmac;
+  int k_len, hotp;
+
+  k_len = strlen((char*)k);
+
+  hmac = hotp_hmac_sha1(k, k_len, c);
+  hotp =
+      hotp_trunc8(hmac, 20);  // 20 is the standard length of HMAC-SHA-1 output
+
+  return hotp;
+}
+
+// Returns the HMAC-SHA-1 digest of counter c using shared secret k.
+//
+// NOTE: k should be ASCII encoded, not base32 as in the OTP URI.
+// NOTE: This function takes the counter as a uint64_t, converts it to
+//       little-endian format before providing the bytes to OpenSSL's
+//       HMAC implementation.
+unsigned char* hotp_hmac_sha1(const unsigned char* k, int k_len, uint64_t c) {
+  // Union enables us to read uint64 bytes as unsigned char bytes
+  union Count {
+    uint64_t l;
+    unsigned char ch[sizeof(uint64_t)];
+  };
+
+  union Count countBigEndian;
+  size_t countSize;
+  unsigned char* digest;
+
+  // HOTP test vectors indicate that the counter is HMAC'd in Big-Endian
+  countBigEndian.l = htobe64(c);  // Convert counter to Big-Endian bytes
+  countSize = sizeof(uint64_t);
+
+  digest = HMAC(EVP_sha1(), k, k_len, countBigEndian.ch, countSize, NULL, NULL);
+  return digest;
+}
+
+// Dynamically truncates HMAC bits and returns 6-digit HOTP
+int hotp_trunc6(const unsigned char* d, int d_len) {
+  int offset, bin_code;
+
+  offset = d[d_len - 1] & 0xf;
+  bin_code = (d[offset] & 0x7f) << 24 | (d[offset + 1] & 0xff) << 16 |
+             (d[offset + 2] & 0xff) << 8 | (d[offset + 3] & 0xff);
+
+  return (bin_code % 1000000);
+}
+
+// Dynamically truncates HMAC bits and returns 8-digit HOTP
+int hotp_trunc8(const unsigned char* d, int d_len) {
+  int offset, bin_code;
+
+  offset = d[d_len - 1] & 0xf;
+  bin_code = (d[offset] & 0x7f) << 24 | (d[offset + 1] & 0xff) << 16 |
+             (d[offset + 2] & 0xff) << 8 | (d[offset + 3] & 0xff);
+
+  return (bin_code % 100000000);
+}
+
+// Print a 6-digit OTP to stdout.
+// For convenience, because remembering format specifiers is hard sometimes.
+void otp_print6(int otp) { printf("%06d", otp); }
+void hotp_print6(int hotp) { otp_print6(hotp); }
+void totp_print6(int totp) { otp_print6(totp); }
+void otp_print(int otp) { otp_print6(otp); }
+
+// Print a 8-digit OTP to stdout.
+// For convenience, because remembering format specifiers is hard sometimes.
+void otp_print8(int otp) { printf("%08d", otp); }
+void hotp_print8(int hotp) { otp_print8(hotp); }
+void totp_print8(int totp) { otp_print8(totp); }
