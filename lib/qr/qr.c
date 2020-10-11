@@ -198,7 +198,7 @@ gdImagePtr _qr_img(QRcode *code, int fgColor[3], int bgColor[3], int size,
   int img_bgcolor =
       gdImageColorAllocate(img, bgColor[0], bgColor[1], bgColor[2]);
   gdImageFill(img, 0, 0, img_bgcolor);
-  u_char *p = code->data;
+  unsigned char *p = code->data;
   int x, y, posx, posy;
 
   for (y = 0; y < code->width; y++) {
