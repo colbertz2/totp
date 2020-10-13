@@ -162,7 +162,7 @@ char *_qr_keygen() {
   memset(b32, '\0', sizeof(char) * (KEY_LENGTH + 1));
 
   // Generate random bytes for key
-  status = RAND_pseudo_bytes(buffer, KEY_LENGTH);
+  status = RAND_priv_bytes(buffer, KEY_LENGTH);
 
   // Warn users if bytes aren't sufficiently random
   if (status != 1) {
