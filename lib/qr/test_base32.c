@@ -1,4 +1,4 @@
-// Tests for qr.c
+// Tests for base32.c
 
 #include <stdio.h>
 
