@@ -87,6 +87,7 @@ int main(int argc, char* argv[]) {
       case '?':
         // Unknown option
         fprintf(stderr, "case ?\n");
+        usage();
         return EXIT_FAILURE;
         break;
       default:
