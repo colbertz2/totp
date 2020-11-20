@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0)
 project("TOTP Demo" VERSION 0.1.0)
+set(CMAKE_BUILD_TYPE Debug)
 
 include(CTest)
 enable_testing()
@@ -10,13 +11,13 @@ include(CPack)
 
 include_directories(${PROJECT_SOURCE_DIR})
 
-add_executable(submission submission.c)
-target_link_libraries(submission
+add_executable(totp main.c)
+target_link_libraries(totp
                       PUBLIC qr
                       PUBLIC otp)
-add_custom_command(TARGET submission
+add_custom_command(TARGET totp
                    POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:submission> ${PROJECT_SOURCE_DIR})
+                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:totp> ${PROJECT_SOURCE_DIR})
 
 add_library(qr qr.c)
 target_link_libraries(qr
