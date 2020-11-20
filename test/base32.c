@@ -1,8 +1,9 @@
 // Tests for base32.c
 
 #include <stdio.h>
+#include <string.h>
 
-#include "qr.h"
+#include "otp.h"
 
 // Compare encoding/decoding of string d by function (*fun_ptr) to string cmp.
 // Returns 0 if pass, non-zero if fail.

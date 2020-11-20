@@ -12,8 +12,6 @@
 #include <openssl/hmac.h>
 #include <string.h>
 
-#define TOTP_TIME_STEP 30;  // Defined in TOTP standard
-
 unsigned char* hotp_hmac_sha1(const unsigned char* k, int k_len, uint64_t c);
 int hotp_trunc6(const unsigned char* d, int d_len);
 int hotp_trunc8(const unsigned char* d, int d_len);

@@ -1,6 +1,47 @@
 // Header file for otp.c
 
 #include <stdint.h>
+#include <stdlib.h>
+
+#define OTP_KEY_LEN 20
+#define TOTP_TIME_STEP 30
+
+enum OTP_TYPE { OTP_HOTP, OTP_TOTP };
+enum OTP_ALG { OTP_SHA1, OTP_SHA256, OTP_SHA512 };
+
+// Generates a random key of size OTP_KEY_LEN for use in OTP protocols.
+// NOTE: Key is a null-terminated string of random bytes.
+char* otp_keygen();
+
+// @TODO Docs
+char* otp_abnfify(const char* in);
+
+// @TODO Docs
+char* otp_type_resolve(int type);
+
+// @TODO Docs
+char* otp_alg_resolve(int algorithm);
+
+// Returns the otpauth URI compiled from the given arguments.
+//
+// @param auth_type     use enum OTP_TYPE
+// @param issuer        name of provider or service owning this account
+// @param account_name  user account name, email address, etc.
+// @param secret        arbitrary key value of length OTP_KEY_LEN
+// @param algorithm     ignored, use enum OTP_ALG (default SHA-1)
+// @param digits        number of OTP output digits, choose 6 or 8 (default 6)
+// @param counter       initial counter value for HOTP (default 0);
+//                      ignored for TOTP
+char* otp_uri(int auth_type, const char* issuer, const char* account_name,
+              const char* secret, int algorithm, int digits, int counter);
+
+// Encode bytes as base32 string.
+// NOTE: Does not include '=' padding.
+char* b32_encode(const char*, size_t);
+
+// Decode base32 string and return bytes.
+// NOTE: Can handle '=' padding.
+char* b32_decode(const char*, size_t);
 
 // Returns the 6-digit TOTP at Unix time t using shared secret k.
 //
