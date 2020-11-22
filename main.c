@@ -8,6 +8,7 @@
  *      Zach Colbert <colbertz@oregonstate.edu>
  ***********************************************/
 
+#include <errno.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,96 +20,210 @@
 
 #define EXE_NAME "totp"
 
-typedef struct {
+int keygen(int, char**);
+int qrgen(int, char**);
+int code(int, char**);
+int test(int, char**);
+
+typedef struct SubCommand {
   char* name;
-  char* description;
-  char* help;
-  int (*function)(char**);
+  char* note;
+  int (*function)(int, char**);
 } SubCommand;
 
+SubCommand CMDS[] = {
+    {"keygen", "generate new private key", &keygen},
+    {"qrgen", "generate qr code for otp client registration", &qrgen},
+    {"code", "print 6-digit TOTP code for given private key", &code},
+    {"test", "authenticate 6-digit TOTP code against given private key",
+     &test}};
+
 void usage() {
-  fprintf(stderr, "usage: %s <command>\n", EXE_NAME);
+  int i;
+
+  fprintf(stderr, "usage: %s <command> [options]\n", EXE_NAME);
+  fprintf(stderr, "\ncommands:\n");
+  for (i = 0; i < (sizeof(CMDS) / sizeof(SubCommand)); i++) {
+    fprintf(stderr, "\t%s\t%s\n", CMDS[i].name, CMDS[i].note);
+  }
   exit(EXIT_FAILURE);
-}
-
-int getcmd() {
-  const char* func = "getcmd";
-  fprintf(stderr, "%s: %s not yet implemented\n", EXE_NAME, func);
-  return -5;
-}
-
-int keygen(char** argv) {
-  const char* func = "keygen";
-  fprintf(stderr, "%s: %s not yet implemented\n", EXE_NAME, func);
-  return -5;
-}
-int qrgen(char** argv) {
-  const char* func = "qrgen";
-  fprintf(stderr, "%s: %s not yet implemented\n", EXE_NAME, func);
-  return -5;
-}
-int code(char** argv) {
-  const char* func = "code";
-  fprintf(stderr, "%s: %s not yet implemented\n", EXE_NAME, func);
-  return -5;
-}
-int test(char** argv) {
-  const char* func = "test";
-  fprintf(stderr, "%s: %s not yet implemented\n", EXE_NAME, func);
-  return -5;
 }
 
 int main(int argc, char* argv[]) {
   int opt;
-  struct option longopts[] = {{"help", optional_argument, NULL, 'h'}};
-  SubCommand CMDS[] = {
-      {"keygen", "generates a new private key",
-       "usage: %s keygen [-o | --output <file>]", &keygen},
-      {"qrgen", "generates a client registration QR code (jpg)",
-       "usage: %s qrgen -k <keyfile> [-o | --output <file>]", &qrgen},
-      {"code", "returns the current 6-digit TOTP", "usage: %s code", &code},
-      {"test", "'authenticate' with 6-digit TOTP", "usage: %s test <totp>",
-       &test}};
 
   if (argc < 2) {
     fprintf(stderr, "argc < 2\n");
     usage();
   }
 
-  opterr = 0;
-
-  while ((opt = getopt_long(argc, argv, "h::", longopts, NULL)) != -1) {
-    switch (opt) {
-      case 'h':
-        fprintf(stderr, "case h\n");
-        usage();
-        return EXIT_FAILURE;
-        break;
-      case '?':
-        // Unknown option
-        fprintf(stderr, "case ?\n");
-        usage();
-        return EXIT_FAILURE;
-        break;
-      default:
-        // All hell breaks loose
-        fprintf(stderr, "case default\n");
-        return EXIT_FAILURE;
-    }
-  }
-
-  if (argv[optind] == NULL) {
-    fprintf(stderr, "optind condition\n");
+  if (strcmp("--help", argv[1]) == 0 || strcmp("-h", argv[1]) == 0) {
+    fprintf(stderr, "help option\n");
     usage();
-    return EXIT_FAILURE;
   }
+
+  opterr = 0;  // Suppress getopt default error
 
   for (opt = 0; opt < (sizeof(CMDS) / sizeof(SubCommand)); opt++) {
     if (strcmp(argv[optind], CMDS[opt].name) == 0) {
       // Call function associated with this subcommand
-      return CMDS[opt].function(argv + optind);
+      return CMDS[opt].function(argc, argv);
     }
   }
 
+  // unknown command
+  fprintf(stderr, "%s: '%s' is not a command. See '%s --help'\n", EXE_NAME,
+          argv[argc - 1], EXE_NAME);
   return EXIT_FAILURE;
+}
+
+int keygen(int argc, char** argv) {
+  int ret = EXIT_SUCCESS;    // Return value
+  int opt;                   // getopt processing
+  int bflag = 0, oflag = 0;  // getopt processing
+  char* opath;               // output file path
+  FILE* ofile;               // output file pointer
+  struct option longopts[] = {{"output", required_argument, NULL, 'o'},
+                              {"base32", no_argument, NULL, 'b'},
+                              {"help", no_argument, NULL, 'h'}};
+  char *key, *out;  // key bytes string, output string
+
+  optind = 1;  // reset getopt
+  while ((opt = getopt_long(argc, argv, "o:h", longopts, NULL)) != -1) {
+    switch (opt) {
+      case 'h':
+        // Print usage info
+        fprintf(stderr,
+                "usage: %s keygen [-h | --help] [-o <file> | --output <file>] "
+                "[--base32]\n",
+                EXE_NAME);
+        return 1;
+        break;
+      case 'b':
+        // Encode key as base32 before outputting
+        bflag = 1;
+        break;
+      case 'o':
+        // Output to file
+        oflag = 1;
+        opath = calloc(strlen(optarg) + 1, sizeof(char));
+        memset(opath, '\0', strlen(optarg) + 1);
+        strcpy(opath, optarg);
+        break;
+      default:
+        // ignore unknown options
+        break;
+    }
+  }
+
+  key = otp_keygen();
+
+  if (bflag) {
+    // Encode key as base32 before outputting
+    out = b32_encode(key, strlen(key));
+  } else {
+    out = key;
+  }
+
+  if (oflag) {
+    // Output to file
+    ofile = fopen(opath, "w+");
+    if (ofile == NULL) {
+      // Unable to open file for writing
+      fprintf(stderr, "totp: %s\n", strerror(errno));
+      ret = 1;
+      goto ABORT;
+    }
+
+    fprintf(ofile, "%s\n", out);
+    fclose(ofile);
+  } else {
+    // Output to stdout
+    printf("%s\n", out);
+  }
+
+ABORT:
+  if (bflag) {
+    free(out);
+  }
+  if (oflag) {
+    free(opath);
+  }
+
+  return ret;
+}
+
+int qrgen(int argc, char** argv) {
+  int ret = EXIT_SUCCESS;  // return value
+  int opt;
+  struct option longopts[] = {{"help", no_argument, NULL, 'h'}};
+
+  optind = 1;  // reset getopt
+  while ((opt = getopt_long(argc, argv, "h", longopts, NULL)) != -1) {
+    switch (opt) {
+      case 'h':
+        // Print usage info
+        fprintf(stderr, "usage: %s qrgen [-h | --help]\n", EXE_NAME);
+        return 1;
+        break;
+      default:
+        // ignore unknown options
+        break;
+    }
+  }
+
+  fprintf(stderr, "%s: qrgen not yet implemented\n", EXE_NAME);
+  ret = -5;
+
+  return ret;
+}
+
+int code(int argc, char** argv) {
+  int ret = EXIT_SUCCESS;  // return value
+  int opt;
+  struct option longopts[] = {{"help", no_argument, NULL, 'h'}};
+
+  optind = 1;  // reset getopt
+  while ((opt = getopt_long(argc, argv, "h", longopts, NULL)) != -1) {
+    switch (opt) {
+      case 'h':
+        // Print usage info
+        fprintf(stderr, "usage: %s qrgen [-h | --help]\n", EXE_NAME);
+        return 1;
+        break;
+      default:
+        // ignore unknown options
+        break;
+    }
+  }
+
+  fprintf(stderr, "%s: code not yet implemented\n", EXE_NAME);
+  ret = -5;
+
+  return ret;
+}
+
+int test(int argc, char** argv) {
+  int ret = EXIT_SUCCESS;  // return value
+  int opt;
+  struct option longopts[] = {{"help", no_argument, NULL, 'h'}};
+
+  optind = 1;  // reset getopt
+  while ((opt = getopt_long(argc, argv, "h", longopts, NULL)) != -1) {
+    switch (opt) {
+      case 'h':
+        // Print usage info
+        fprintf(stderr, "usage: %s test [-h | --help]\n", EXE_NAME);
+        return 1;
+        break;
+      default:
+        // ignore unknown options
+        break;
+    }
+  }
+
+  fprintf(stderr, "%s: qrgen not yet implemented\n", EXE_NAME);
+  ret = -5;
+
+  return ret;
 }
