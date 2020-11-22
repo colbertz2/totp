@@ -75,3 +75,98 @@
    fun:_dl_init
    obj:/usr/lib/ld-2.32.so
 }
+{
+   zach-mbp-ld-leak-1
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   obj:/usr/lib/libglib-2.0.so.0.6600.2
+   fun:g_private_get
+   fun:g_slice_alloc
+   fun:g_hash_table_new_full
+   obj:/usr/lib/libglib-2.0.so.0.6600.2
+   fun:call_init.part.0
+   fun:_dl_init
+   obj:/usr/lib/ld-2.32.so
+   obj:*
+   obj:*
+   obj:*
+}
+{
+   zach-mbp-ld-leak-2
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:g_malloc0
+   obj:/usr/lib/libglib-2.0.so.0.6600.2
+   fun:g_hash_table_new_full
+   obj:/usr/lib/libglib-2.0.so.0.6600.2
+   fun:call_init.part.0
+   fun:_dl_init
+   obj:/usr/lib/ld-2.32.so
+   obj:*
+   obj:*
+   obj:*
+}
+{
+   zach-mbp-ld-leak-3
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:g_realloc
+   obj:/usr/lib/libglib-2.0.so.0.6600.2
+   fun:g_hash_table_new_full
+   obj:/usr/lib/libglib-2.0.so.0.6600.2
+   fun:call_init.part.0
+   fun:_dl_init
+   obj:/usr/lib/ld-2.32.so
+   obj:*
+   obj:*
+   obj:*
+}
+{
+   zach-mbp-ld-leak-4
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:g_malloc
+   fun:g_slice_alloc
+   fun:g_hash_table_new_full
+   obj:/usr/lib/libglib-2.0.so.0.6600.2
+   fun:call_init.part.0
+   fun:_dl_init
+   obj:/usr/lib/ld-2.32.so
+   obj:*
+   obj:*
+   obj:*
+}
+{
+   zach-mbp-ld-leak-5
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   fun:g_malloc0
+   fun:g_slice_alloc
+   fun:g_hash_table_new_full
+   obj:/usr/lib/libglib-2.0.so.0.6600.2
+   fun:call_init.part.0
+   fun:_dl_init
+   obj:/usr/lib/ld-2.32.so
+   obj:*
+   obj:*
+   obj:*
+}
+{
+   zach-mbp-ld-leak-6
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:g_malloc
+   obj:/usr/lib/libglib-2.0.so.0.6600.2
+   fun:call_init.part.0
+   fun:_dl_init
+   obj:/usr/lib/ld-2.32.so
+   obj:*
+   obj:*
+   obj:*
+}
